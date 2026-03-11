@@ -41,6 +41,9 @@ body{
 
 /* ── Utility ── */
 .container{max-width:1200px;margin:0 auto;padding:0 4rem}
+@media(max-width:768px){
+  .container{padding-left:max(1rem,env(safe-area-inset-left));padding-right:max(1rem,env(safe-area-inset-right))}
+}
 .section{padding:6rem 0}
 .section-label{
   font-family:'JetBrains Mono',monospace;
@@ -446,6 +449,8 @@ body::before{
   border:1px solid var(--border);
   border-radius:var(--radius-lg);
   padding:2rem;
+  overflow-x:auto;
+  min-width:0;
 }
 .result-table-wrap caption{
   font-size:.9rem;
@@ -457,6 +462,7 @@ body::before{
 }
 .result-table{
   width:100%;
+  min-width:320px;
   border-collapse:collapse;
   font-size:.82rem;
   table-layout:fixed;

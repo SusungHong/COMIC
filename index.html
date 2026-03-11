@@ -462,16 +462,11 @@ body::before{
 }
 .result-table{
   width:100%;
-  min-width:400px;
+  min-width:500px;
   border-collapse:collapse;
   font-size:.82rem;
   table-layout:fixed;
 }
-
-/* Explicit column widths for the automated metrics table */
-.result-table.metrics-table col.col-method { width: 16%; }
-.result-table.metrics-table col.col-data   { width: 14%; }
-
 .result-table thead th{
   font-family:'JetBrains Mono',monospace;
   font-size:.65rem;
@@ -485,7 +480,7 @@ body::before{
   word-wrap:break-word;
   overflow-wrap:break-word;
 }
-.result-table thead th:first-child{text-align:left}
+.result-table thead th:first-child{text-align:left;width:16%}
 .result-table thead th.col-group{
   border-bottom:none;
   padding-bottom:.2rem;

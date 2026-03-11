@@ -1,1 +1,5 @@
-# COMIC
+# COMIC: Agentic Sketch Comedy Generation
+[![Project Page](https://img.shields.io/badge/Project_Page-Visit-blue)](https://susunghong.github.io/COMIC)
+[![arXiv](https://img.shields.io/badge/arXiv-2503.14505-b31b1b)](https://arxiv.org/abs/2503.14505)
+
+Code coming soon!

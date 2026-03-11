@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Haedol Park",
+    "description": "He is a typical PhD student in computer vision and generative AI, currently focusing on video content generation. He always drinks lattes, finding Americanos too dull. He enjoys attending conferences and collecting free t-shirts.",
+    "portrait_path": "Haedol_Park/portrait.png",
+    "voice_path": "Haedol_Park/voice.wav"
+  },
+  {
+    "name": "Rex Ironbolt",
+    "description": "He is a beer-powered robot and Haedol's self-proclaimed greatest research assistant who ever lived. He spends more time stealing lab equipment and storing it in his chest cavity than doing actual research, and his hobbies include gambling, bending things that don't need bending, and dreaming of starting his own robot country.",
+    "portrait_path": "Rex_Ironbolt/portrait.png",
+    "voice_path": "Rex_Ironbolt/voice.wav"
+  }
+]

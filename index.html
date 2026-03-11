@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMIC: Agentic Sketch Comedy Generation</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='8' width='28' height='20' rx='2' fill='%23181820'/%3E%3Crect x='2' y='4' width='28' height='7' rx='1' fill='%23222230'/%3E%3Cline x1='9' y1='4' x2='7' y2='11' stroke='%23f0c040' stroke-width='1.5'/%3E%3Cline x1='16' y1='4' x2='14' y2='11' stroke='%23f0c040' stroke-width='1.5'/%3E%3Cline x1='23' y1='4' x2='21' y2='11' stroke='%23f0c040' stroke-width='1.5'/%3E%3Cpolygon points='13,15 13,25 22,20' fill='%23f0c040'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;
+  --bg-card:#13131a;
+  --bg-card-hover:#1a1a24;
+  --surface:#1c1c28;
+  --border:#2a2a3a;
+  --text:#e8e6e3;
+  --text-dim:#8b8999;
+  --accent:#f0c040;
+  --accent-dim:#c49a20;
+  --accent-glow:rgba(240,192,64,0.15);
+  --red:#e84057;
+  --blue:#5b8def;
+  --green:#4ecdc4;
+  --radius:12px;
+  --radius-lg:20px;
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  font-weight:400;
+  line-height:1.7;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--accent);color:var(--bg)}
+
+/* ── Utility ── */
+.container{max-width:1200px;margin:0 auto;padding:0 4rem}
+.section{padding:6rem 0}
+.section-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.75rem;
+  font-weight:500;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:.75rem;
+}
+.section-title{
+  font-family:'Playfair Display',serif;
+  font-size:2.5rem;
+  font-weight:900;
+  line-height:1.15;
+  margin-bottom:1.5rem;
+}
+@media(max-width:768px){.section-title{font-size:1.8rem}}
+
+/* ── Animated grain overlay ── */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity:.4;
+}
+
+/* ── Hero ── */
+.hero{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+  padding:2rem;
+}
+.hero::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 0%, rgba(240,192,64,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 80% 80%, rgba(91,141,239,0.05) 0%, transparent 60%);
+}
+.hero-inner{
+  position:relative;
+  text-align:center;
+  max-width:900px;
+}
+.hero-badge{
+  display:inline-block;
+  font-family:'JetBrains Mono',monospace;
+  font-size:.7rem;
+  font-weight:500;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--accent);
+  border:1px solid var(--accent-dim);
+  padding:.4rem 1.2rem;
+  border-radius:100px;
+  margin-bottom:2rem;
+  background:var(--accent-glow);
+}
+.hero h1{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(3rem, 7vw, 6rem);
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:-.02em;
+  margin-bottom:1.5rem;
+}
+.hero h1 span{
+  background:linear-gradient(135deg, var(--accent) 0%, #ffd97d 50%, var(--accent) 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:shimmer 4s ease-in-out infinite;
+}
+@keyframes shimmer{0%,100%{background-position:0% center}50%{background-position:200% center}}
+.hero-subtitle{
+  font-size:1.15rem;
+  color:var(--text-dim);
+  max-width:650px;
+  margin:0 auto 2.5rem;
+  line-height:1.8;
+}
+.hero-authors{
+  margin-bottom:1rem;
+  font-size:1.05rem;
+  color:var(--text);
+  line-height:2;
+}
+.hero-authors a{
+  color:var(--text-dim);
+  text-decoration:none;
+  border-bottom:1px solid var(--border);
+  transition:color .2s ease, border-color .2s ease;
+  margin:0 .4rem;
+}
+.hero-authors a:hover{
+  color:var(--accent);
+  border-color:var(--accent);
+}
+.hero-affiliation{
+  font-size:.95rem;
+  color:var(--text-dim);
+  margin-bottom:2rem;
+}
+.hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:.5rem;
+  padding:.8rem 1.8rem;
+  border-radius:100px;
+  font-family:'Inter',sans-serif;
+  font-size:.85rem;
+  font-weight:600;
+  text-decoration:none;
+  transition:all .25s ease;
+  cursor:pointer;
+  border:none;
+}
+.btn-primary{
+  background:var(--accent);
+  color:var(--bg);
+}
+.btn-primary:hover{
+  background:#ffd97d;
+  transform:translateY(-2px);
+  box-shadow:0 8px 30px rgba(240,192,64,.25);
+}
+.btn-ghost{
+  background:transparent;
+  color:var(--text);
+  border:1px solid var(--border);
+}
+.btn-ghost:hover{
+  border-color:var(--text-dim);
+  background:var(--surface);
+  transform:translateY(-2px);
+}
+.scroll-hint{
+  position:absolute;
+  bottom:2rem;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:.5rem;
+  color:var(--text-dim);
+  font-size:.7rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  animation:float 2s ease-in-out infinite;
+}
+.scroll-hint svg{width:20px;height:20px;stroke:var(--text-dim)}
+@keyframes float{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+
+/* ── Abstract ── */
+.abstract{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:3rem;
+  position:relative;
+  overflow:hidden;
+}
+.abstract::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+  background:linear-gradient(90deg, var(--accent), var(--blue), var(--green));
+}
+.abstract p{
+  font-size:1.05rem;
+  color:var(--text-dim);
+  line-height:1.9;
+  max-width:800px;
+}
+.abstract p em{
+  color:var(--text);
+  font-style:normal;
+  font-weight:500;
+}
+
+/* ── Video Grid ── */
+.video-grid{
+  display:flex;
+  flex-direction:column;
+  gap:2.5rem;
+  max-width:800px;
+  margin:0 auto;
+}
+.video-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  transition:all .3s ease;
+  position:relative;
+}
+.video-card:hover{
+  border-color:var(--accent-dim);
+  transform:translateY(-4px);
+  box-shadow:0 20px 60px rgba(0,0,0,.4);
+}
+.video-card .yt-wrap{
+  position:relative;
+  width:100%;
+  padding-bottom:56.25%;
+  background:#000;
+}
+.video-card .yt-wrap iframe{
+  position:absolute;
+  top:0;left:0;
+  width:100%;
+  height:100%;
+  border:0;
+}
+.video-card-info{padding:1rem 1.25rem}
+.video-card-num{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.65rem;
+  color:var(--accent);
+  letter-spacing:.1em;
+}
+.video-card-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.05rem;
+  font-weight:700;
+  margin-top:.25rem;
+}
+
+/* ── Characters ── */
+.characters-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));
+  gap:1.5rem;
+}
+.char-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  transition:all .3s ease;
+  text-align:center;
+}
+.char-card:hover{
+  border-color:var(--accent-dim);
+  transform:translateY(-4px);
+  box-shadow:0 20px 60px rgba(0,0,0,.4);
+}
+.char-portrait{
+  width:100%;
+  aspect-ratio:1;
+  object-fit:cover;
+  display:block;
+  filter:saturate(.9);
+  transition:filter .3s ease;
+}
+.char-card:hover .char-portrait{filter:saturate(1.1)}
+.char-info{padding:1.25rem}
+.char-name{
+  font-family:'Playfair Display',serif;
+  font-size:1.15rem;
+  font-weight:700;
+  margin-bottom:.4rem;
+}
+.char-desc{
+  font-size:.82rem;
+  color:var(--text-dim);
+  line-height:1.6;
+}
+.char-voice-wrap{
+  padding:.6rem 1.25rem;
+  border-bottom:1px solid var(--border);
+}
+.char-voice{
+  display:inline-flex;
+  align-items:center;
+  gap:.4rem;
+  padding:.35rem .8rem;
+  border-radius:100px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text-dim);
+  font-family:'JetBrains Mono',monospace;
+  font-size:.65rem;
+  font-weight:500;
+  letter-spacing:.05em;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+.char-voice:hover{
+  border-color:var(--accent);
+  color:var(--accent);
+  background:var(--accent-glow);
+}
+.char-voice.playing{
+  border-color:var(--accent);
+  color:var(--accent);
+  background:var(--accent-glow);
+}
+.char-voice svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── Method ── */
+.method-steps{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+  gap:1.5rem;
+  margin-top:2rem;
+}
+.step-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:2rem 1.5rem;
+  position:relative;
+  transition:all .3s ease;
+}
+.step-card:hover{
+  border-color:var(--accent-dim);
+  background:var(--bg-card-hover);
+}
+.step-num{
+  font-family:'Playfair Display',serif;
+  font-size:2.5rem;
+  font-weight:900;
+  color:var(--accent);
+  opacity:.3;
+  line-height:1;
+  margin-bottom:.75rem;
+}
+.step-title{
+  font-weight:600;
+  font-size:.95rem;
+  margin-bottom:.5rem;
+}
+.step-desc{
+  font-size:.82rem;
+  color:var(--text-dim);
+  line-height:1.65;
+}
+
+/* ── Ablation ── */
+.ablation-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:2rem;
+  margin-top:2rem;
+}
+@media(max-width:768px){.ablation-grid{grid-template-columns:1fr}}
+.ablation-col h3{
+  font-family:'Playfair Display',serif;
+  font-size:1.15rem;
+  font-weight:700;
+  margin-bottom:1rem;
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+}
+.ablation-col h3 .tag{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.6rem;
+  font-weight:500;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  padding:.25rem .6rem;
+  border-radius:100px;
+}
+.tag-ours{background:rgba(78,205,196,.15);color:var(--green)}
+.tag-baseline{background:rgba(232,64,87,.15);color:var(--red)}
+.ablation-videos{display:flex;flex-direction:column;gap:1rem}
+.ablation-videos .yt-wrap{
+  position:relative;
+  width:100%;
+  padding-bottom:56.25%;
+  border-radius:var(--radius);
+  overflow:hidden;
+  border:1px solid var(--border);
+  background:#000;
+}
+.ablation-videos .yt-wrap iframe{
+  position:absolute;
+  top:0;left:0;
+  width:100%;
+  height:100%;
+  border:0;
+}
+
+/* ── Results tables ── */
+.results-tables{display:flex;flex-direction:column;gap:3rem;margin-top:2rem}
+.result-table-wrap{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:2rem;
+}
+.result-table-wrap caption{
+  font-size:.9rem;
+  color:var(--text-dim);
+  text-align:left;
+  margin-bottom:1.25rem;
+  line-height:1.6;
+  caption-side:top;
+}
+.result-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.82rem;
+  table-layout:fixed;
+}
+
+/* Explicit column widths for the automated metrics table */
+.result-table.metrics-table col.col-method { width: 16%; }
+.result-table.metrics-table col.col-data   { width: 14%; }
+
+.result-table thead th{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.65rem;
+  font-weight:500;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:var(--accent);
+  padding:.5rem .4rem;
+  text-align:center;
+  border-bottom:1px solid var(--border);
+  word-wrap:break-word;
+  overflow-wrap:break-word;
+}
+.result-table thead th:first-child{text-align:left}
+.result-table thead th.col-group{
+  border-bottom:none;
+  padding-bottom:.2rem;
+}
+.result-table thead tr.sub-header th{
+  font-size:.65rem;
+  color:var(--text-dim);
+  letter-spacing:.06em;
+  padding-top:.2rem;
+  text-align:center;
+}
+.result-table tbody td{
+  padding:.55rem .4rem;
+  text-align:center;
+  color:var(--text-dim);
+  border-bottom:1px solid rgba(42,42,58,.4);
+}
+.result-table tbody td:first-child{
+  text-align:left;
+  color:var(--text);
+  font-weight:500;
+}
+.result-table tbody tr:last-child td{border-bottom:none}
+.result-table tbody tr:hover{background:var(--bg-card-hover)}
+.result-table .bold{color:var(--accent);font-weight:700}
+.result-table .underline{color:var(--text);text-decoration:underline;text-underline-offset:2px}
+.result-table .muted td{color:rgba(139,137,153,.5)}
+.result-table .muted td:first-child{color:rgba(139,137,153,.5)}
+.result-table .highlight td{border-bottom:none}
+.result-table .highlight td:first-child{color:var(--accent)}
+
+/* ── Pipeline figure ── */
+.pipeline-wrap{
+  margin-top:2rem;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:2.5rem;
+  overflow-x:auto;
+}
+.pipeline{
+  display:flex;
+  align-items:center;
+  gap:0;
+  min-width:700px;
+  justify-content:center;
+}
+.pipe-node{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:.5rem;
+  min-width:120px;
+}
+.pipe-icon{
+  width:56px;height:56px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.4rem;
+  border:2px solid var(--border);
+  background:var(--surface);
+  transition:all .3s ease;
+}
+.pipe-node:hover .pipe-icon{
+  border-color:var(--accent);
+  box-shadow:0 0 20px var(--accent-glow);
+}
+.pipe-label{
+  font-size:.72rem;
+  font-weight:600;
+  text-align:center;
+  max-width:100px;
+  line-height:1.3;
+}
+.pipe-sublabel{
+  font-size:.6rem;
+  color:var(--text-dim);
+  text-align:center;
+  max-width:110px;
+}
+.pipe-arrow{
+  width:50px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--text-dim);
+  font-size:.8rem;
+  flex-shrink:0;
+}
+.pipe-arrow svg{width:40px;height:16px;stroke:var(--border);stroke-width:1.5}
+
+/* ── BibTeX ── */
+.bibtex-block{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:1.5rem;
+  overflow-x:auto;
+  position:relative;
+}
+.bibtex-block pre{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.75rem;
+  line-height:1.7;
+  color:var(--text-dim);
+  white-space:pre;
+  margin:0;
+}
+.bibtex-copy{
+  position:absolute;
+  top:.75rem;
+  right:.75rem;
+  padding:.3rem .7rem;
+  border-radius:6px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text-dim);
+  font-family:'JetBrains Mono',monospace;
+  font-size:.6rem;
+  font-weight:500;
+  letter-spacing:.05em;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+.bibtex-copy:hover{
+  border-color:var(--accent);
+  color:var(--accent);
+}
+
+/* ── Footer ── */
+.footer{
+  padding:3rem 0;
+  border-top:1px solid var(--border);
+  text-align:center;
+  font-size:.8rem;
+  color:var(--text-dim);
+}
+
+/* ── Fade-in animations ── */
+.fade-up{
+  opacity:0;
+  transform:translateY(30px);
+  transition:opacity .6s ease, transform .6s ease;
+}
+.fade-up.visible{
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* ── Featured video ── */
+.featured-video{
+  margin-top:2.5rem;
+  max-width:800px;
+  margin-left:auto;
+  margin-right:auto;
+  position:relative;
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  border:1px solid var(--border);
+  box-shadow:0 30px 80px rgba(0,0,0,.5);
+}
+.featured-video .yt-wrap{
+  position:relative;
+  width:100%;
+  padding-bottom:56.25%;
+  background:#000;
+}
+.featured-video .yt-wrap iframe{
+  position:absolute;
+  top:0;left:0;
+  width:100%;
+  height:100%;
+  border:0;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">Fully Automated AI Comedy</div>
+    <h1><span>COMIC</span></h1>
+    <p class="hero-subtitle">
+      A multi-agent system that writes, directs, and produces comedy sketch videos
+      &mdash; from character references to final cut &mdash; rivaling professionally produced content.
+    </p>
+    <div class="hero-authors">
+      <a href="https://susunghong.github.io/" target="_blank">Susung Hong</a>
+      <a href="https://homes.cs.washington.edu/~curless/" target="_blank">Brian Curless</a>
+      <a href="https://www.irakemelmacher.com/" target="_blank">Ira Kemelmacher-Shlizerman</a>
+      <a href="https://www.smseitz.com/" target="_blank">Steve Seitz</a>
+    </div>
+    <div class="hero-affiliation">University of Washington</div>
+    <div class="hero-actions">
+      <a href="#featured" class="btn btn-primary">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5,3 19,12 5,21" transform="scale(0.7)"/></svg>
+        Watch Sketches
+      </a>
+      <a href="#" class="btn btn-ghost">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12a2 2 0 012 2v16a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg>
+        Read Paper
+      </a>
+      <a href="https://github.com/SusungHong/COMIC" target="_blank" class="btn btn-ghost">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Code (Coming Soon)
+      </a>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 L10 8 L14 2" transform="translate(-4,6)"/></svg>
+  </div>
+</section>
+
+<!-- ═══════════════ ABSTRACT ═══════════════ -->
+<section id="abstract" class="section">
+  <div class="container fade-up">
+    <div class="section-label">Abstract</div>
+    <div class="abstract">
+      <p>
+        We propose a <em>fully automated AI system</em> that produces short comedic videos similar to sketch shows such as Saturday Night Live. Starting with character references, the system employs a <em>population of agents</em> loosely based on real production studio roles, structured to optimize the quality and diversity of ideas and outputs through <em>iterative competition, evaluation, and improvement</em>. A key contribution is the introduction of LLM critics aligned with real viewer preferences through the analysis of a corpus of comedy videos on YouTube to automatically evaluate humor. Our experiments show that our framework produces results <em>approaching the quality of professionally produced sketches</em> while demonstrating state-of-the-art performance in video generation.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FEATURED ═══════════════ -->
+<section id="featured" class="section" style="padding-top:0">
+  <div class="container fade-up">
+    <div class="section-label">Featured Sketch</div>
+    <div class="section-title">The Conference T-Shirt Mafia</div>
+    <div class="featured-video">
+      <div class="yt-wrap">
+        <iframe data-yt-id="featured" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CHARACTERS ═══════════════ -->
+<section id="characters" class="section" style="padding-top:2rem">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">The Cast</div>
+      <div class="section-title">Main Characters</div>
+      <p style="color:var(--text-dim);max-width:600px;margin-bottom:2rem;">
+        Each character is defined by a reference portrait, a voice sample, and a personality description
+        &mdash; the system handles the rest.
+      </p>
+    </div>
+    <div class="characters-grid fade-up">
+
+      <div class="char-card">
+        <img class="char-portrait" src="assets/characters/Haedol_Park/portrait.png" alt="Haedol Park" loading="lazy">
+        <div class="char-voice-wrap">
+          <button class="char-voice" onclick="playVoice(this,'assets/characters/Haedol_Park/voice.wav')">
+            <svg viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>
+            Listen to voice
+          </button>
+        </div>
+        <div class="char-info">
+          <div class="char-name">Haedol Park</div>
+          <div class="char-desc">A typical PhD student in computer vision and generative AI. Always drinks lattes, finding Americanos too dull. Enjoys attending conferences and collecting free t-shirts.</div>
+        </div>
+      </div>
+
+      <div class="char-card">
+        <img class="char-portrait" src="assets/characters/Melissa_Swift/portrait.png" alt="Melissa Swift" loading="lazy">
+        <div class="char-voice-wrap">
+          <button class="char-voice" onclick="playVoice(this,'assets/characters/Melissa_Swift/voice.wav')">
+            <svg viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>
+            Listen to voice
+          </button>
+        </div>
+        <div class="char-info">
+          <div class="char-name">Melissa Swift</div>
+          <div class="char-desc">A devilish fashion magazine editor who wears Prada and treats assistants like disposable coffee cups. Can destroy careers with a whisper.</div>
+        </div>
+      </div>
+
+      <div class="char-card">
+        <img class="char-portrait" src="assets/characters/Eric_Cross/portrait.png" alt="Eric Cross" loading="lazy">
+        <div class="char-voice-wrap">
+          <button class="char-voice" onclick="playVoice(this,'assets/characters/Eric_Cross/voice.wav')">
+            <svg viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>
+            Listen to voice
+          </button>
+        </div>
+        <div class="char-info">
+          <div class="char-name">Eric Cross</div>
+          <div class="char-desc">An ambitious field operative who treats impossible missions like grocery shopping. Runs everywhere because walking is for quitters. Regards physics as a mere suggestion.</div>
+        </div>
+      </div>
+
+      <div class="char-card">
+        <img class="char-portrait" src="assets/characters/Rex_Ironbolt/portrait.png" alt="Rex Ironbolt" loading="lazy">
+        <div class="char-voice-wrap">
+          <button class="char-voice" onclick="playVoice(this,'assets/characters/Rex_Ironbolt/voice.wav')">
+            <svg viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>
+            Listen to voice
+          </button>
+        </div>
+        <div class="char-info">
+          <div class="char-name">Rex Ironbolt</div>
+          <div class="char-desc">A beer-powered robot and self-proclaimed greatest research assistant. Spends more time stealing lab equipment than doing research. Hobbies include gambling and bending things.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ METHOD ═══════════════ -->
+<section id="method" class="section">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Pipeline</div>
+      <div class="section-title">How COMIC Works</div>
+      <p style="color:var(--text-dim);max-width:700px;margin-bottom:0;">
+        COMIC is loosely modeled on human production studios, with agentic counterparts for each role
+        &mdash; writers, critics, and directors. Two core loops drive quality: an <strong style="color:var(--text)">island-based writing loop</strong>
+        for scripts and a <strong style="color:var(--text)">rendering loop</strong> for video, each using competition and iteration to produce
+        breadth and depth of output.
+      </p>
+    </div>
+
+    <div class="pipeline-wrap fade-up">
+      <div class="pipeline">
+        <div class="pipe-node">
+          <div class="pipe-icon">&#x1F3AD;</div>
+          <div class="pipe-label">Characters</div>
+          <div class="pipe-sublabel">Portraits, voices &amp; personas</div>
+        </div>
+        <div class="pipe-arrow"><svg viewBox="0 0 40 16"><line x1="0" y1="8" x2="36" y2="8"/><polyline points="32,3 38,8 32,13"/></svg></div>
+        <div class="pipe-node">
+          <div class="pipe-icon">&#x1F50D;</div>
+          <div class="pipe-label">Humor Critics</div>
+          <div class="pipe-sublabel">YouTube-aligned preference alignment</div>
+        </div>
+        <div class="pipe-arrow"><svg viewBox="0 0 40 16"><line x1="0" y1="8" x2="36" y2="8"/><polyline points="32,3 38,8 32,13"/></svg></div>
+        <div class="pipe-node">
+          <div class="pipe-icon">&#x270D;&#xFE0F;</div>
+          <div class="pipe-label">Writing Loop</div>
+          <div class="pipe-sublabel">Island-based script competition &amp; refinement</div>
+        </div>
+        <div class="pipe-arrow"><svg viewBox="0 0 40 16"><line x1="0" y1="8" x2="36" y2="8"/><polyline points="32,3 38,8 32,13"/></svg></div>
+        <div class="pipe-node">
+          <div class="pipe-icon">&#x1F3AC;</div>
+          <div class="pipe-label">Scene Director</div>
+          <div class="pipe-sublabel">Shot breakdown with continuity</div>
+        </div>
+        <div class="pipe-arrow"><svg viewBox="0 0 40 16"><line x1="0" y1="8" x2="36" y2="8"/><polyline points="32,3 38,8 32,13"/></svg></div>
+        <div class="pipe-node">
+          <div class="pipe-icon">&#x1F3A5;</div>
+          <div class="pipe-label">Rendering Loop</div>
+          <div class="pipe-sublabel">Iterative video generation &amp; critic refinement</div>
+        </div>
+        <div class="pipe-arrow"><svg viewBox="0 0 40 16"><line x1="0" y1="8" x2="36" y2="8"/><polyline points="32,3 38,8 32,13"/></svg></div>
+        <div class="pipe-node">
+          <div class="pipe-icon">&#x1F39E;&#xFE0F;</div>
+          <div class="pipe-label">Final Sketch</div>
+          <div class="pipe-sublabel">Assembled comedy video</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="method-steps fade-up">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-title">YouTube-Aligned Critics</div>
+        <div class="step-desc">Humor critics are derived by analyzing a corpus of YouTube comedy sketch videos and their viewer engagement, enabling automatic evaluation that correlates with real audience preferences.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-title">Writing Loop</div>
+        <div class="step-desc">Multiple distinct islands of scripts are maintained, each governed by critic committees representing different comedic philosophies. Scripts improve through round-robin tournaments where losers are refined using winner feedback.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-title">Sequential Shot Rendering</div>
+        <div class="step-desc">Scene directors break each script into shots with specific setups &mdash; characters, dialogue, expressions, backgrounds. Shots are produced consecutively, referencing previous shots for continuity.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">04</div>
+        <div class="step-title">Rendering Loop</div>
+        <div class="step-desc">Each shot is evaluated by script-conditioned rendering critics that embody diverse interpretations of the narrative, then refined based on their feedback through depth- and breadth-wise competition.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ VIDEOS ═══════════════ -->
+<section id="videos" class="section">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Gallery</div>
+      <div class="section-title">Generated Comedy Sketches</div>
+      <p style="color:var(--text-dim);max-width:600px;margin-bottom:2.5rem;">
+        All sketches below were fully generated by COMIC &mdash; scripts, voices, visuals, and editing &mdash; with zero human intervention.
+      </p>
+    </div>
+    <div class="video-grid fade-up">
+
+      <div class="video-card">
+        <div class="yt-wrap"><iframe data-yt-id="sketch01" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+        <div class="video-card-info"><div class="video-card-num">SKETCH 01</div><div class="video-card-title">The Free T-Shirt Fashion Week</div></div>
+      </div>
+
+      <div class="video-card">
+        <div class="yt-wrap"><iframe data-yt-id="sketch02" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+        <div class="video-card-info"><div class="video-card-num">SKETCH 02</div><div class="video-card-title">Extreme Grocery Shopping</div></div>
+      </div>
+
+      <div class="video-card">
+        <div class="yt-wrap"><iframe data-yt-id="sketch03" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+        <div class="video-card-info"><div class="video-card-num">SKETCH 03</div><div class="video-card-title">The Great Lab Equipment Heist</div></div>
+      </div>
+
+      <div class="video-card">
+        <div class="yt-wrap"><iframe data-yt-id="sketch04" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+        <div class="video-card-info"><div class="video-card-num">SKETCH 04</div><div class="video-card-title">The Deep Learning Makeover</div></div>
+      </div>
+
+      <div class="video-card">
+        <div class="yt-wrap"><iframe data-yt-id="sketch05" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+        <div class="video-card-info"><div class="video-card-num">SKETCH 05</div><div class="video-card-title">DMV Line Protocol</div></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ RESULTS ═══════════════ -->
+<section id="results" class="section">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Evaluation</div>
+      <div class="section-title">Quantitative Results</div>
+    </div>
+    <div class="results-tables fade-up">
+
+      <div class="result-table-wrap">
+        <table class="result-table">
+          <caption>Human evaluation of baseline methods across multiple criteria (1&ndash;7 scale).</caption>
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Funniness &uarr;</th>
+              <th>Watch More &uarr;</th>
+              <th>vs. Human &uarr;</th>
+              <th>Script &uarr;</th>
+              <th>Narrative &uarr;</th>
+              <th>Realism &uarr;</th>
+              <th>Consistency &uarr;</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="muted">
+              <td>Veo 3.1</td>
+              <td>2.32</td><td>2.36</td><td>2.27</td><td>2.18</td><td>3.32</td><td>4.91</td><td>5.05</td>
+            </tr>
+            <tr class="muted">
+              <td>Sora 2</td>
+              <td>2.73</td><td>2.73</td><td>2.32</td><td>2.45</td><td>3.36</td><td>5.73</td><td>5.50</td>
+            </tr>
+            <tr>
+              <td>VGoT</td>
+              <td>1.18</td><td>1.27</td><td>1.14</td><td>1.00</td><td>1.23</td><td>2.00</td><td>2.32</td>
+            </tr>
+            <tr>
+              <td>MovieAgent</td>
+              <td>1.27</td><td>1.09</td><td>1.18</td><td>1.09</td><td>1.09</td><td>1.27</td><td>1.14</td>
+            </tr>
+            <tr class="highlight">
+              <td>COMIC (Ours)</td>
+              <td class="bold">3.45</td><td class="bold">3.09</td><td class="bold">3.05</td><td class="bold">3.32</td><td class="bold">4.50</td><td class="bold">4.27</td><td class="bold">4.50</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="result-table-wrap">
+        <table class="result-table metrics-table">
+          <caption>Automated metrics (win rate and diversity scores), computed against middle-ranked professional videos, averaged across all channels. <em>Single Best</em> uses a single top critic; <em>Channel-Wise Best</em> aggregates across per-channel best critics.</caption>
+          <!-- Explicit column widths: 1 method col + 6 equal data cols -->
+          <colgroup>
+            <col class="col-method">
+            <col class="col-data"><col class="col-data"><col class="col-data">
+            <col class="col-data"><col class="col-data"><col class="col-data">
+          </colgroup>
+          <thead>
+            <tr>
+              <th rowspan="2">Method</th>
+              <th colspan="3" class="col-group">Single Best</th>
+              <th colspan="3" class="col-group">Channel-Wise Best</th>
+            </tr>
+            <tr class="sub-header">
+              <th>Win Rate</th><th>Inter-Diversity</th><th>Intra-Diversity</th>
+              <th>Win Rate</th><th>Inter-Diversity</th><th>Intra-Diversity</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Veo 3.1</td>
+              <td>0.010</td><td>0.308</td><td>0.369</td>
+              <td>0.105</td><td>0.263</td><td>0.360</td>
+            </tr>
+            <tr>
+              <td>Sora 2</td>
+              <td class="underline">0.075</td><td class="underline">0.531</td><td class="bold">0.722</td>
+              <td class="underline">0.175</td><td class="underline">0.310</td><td class="underline">0.563</td>
+            </tr>
+            <tr>
+              <td>VGoT</td>
+              <td>0.000</td><td>0.000</td><td>0.000</td>
+              <td>0.010</td><td>0.105</td><td>0.189</td>
+            </tr>
+            <tr>
+              <td>MovieAgent</td>
+              <td>0.000</td><td>0.000</td><td>0.000</td>
+              <td>0.130</td><td>0.088</td><td>0.180</td>
+            </tr>
+            <tr class="highlight">
+              <td>COMIC (Ours)</td>
+              <td class="bold">0.440</td><td class="bold">0.780</td><td class="underline">0.682</td>
+              <td class="bold">0.390</td><td class="bold">0.519</td><td class="bold">0.693</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <div class="fade-up" style="margin-top:3rem">
+      <div class="section-label">Self-Improvement</div>
+      <div class="section-title">Multi-Island Iteration</div>
+      <p style="color:var(--text-dim);max-width:650px;margin-bottom:1.5rem;">
+        Performance improves as the island-based loop iterates. Metrics are computed against the initial scripts.
+      </p>
+    </div>
+    <div class="result-table-wrap fade-up" style="padding:1.5rem">
+      <div style="display:flex;gap:2rem;flex-wrap:wrap;justify-content:center">
+        <div style="flex:1;min-width:280px;max-width:500px">
+          <div style="position:relative;width:100%;padding-bottom:61.8%">
+            <canvas id="chart-win" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
+          </div>
+        </div>
+        <div style="flex:1;min-width:280px;max-width:500px">
+          <div style="position:relative;width:100%;padding-bottom:61.8%">
+            <canvas id="chart-inter" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════ ABLATION ═══════════════ -->
+<section id="ablation" class="section">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Ablation Study</div>
+      <div class="section-title">Impact of Critics</div>
+      <p style="color:var(--text-dim);max-width:650px;margin-bottom:1rem;">
+        Removing the critic-guided refinement loop produces noticeably weaker sketches.
+        Compare the outputs below &mdash; the same characters and prompts, with and without critic feedback.
+      </p>
+    </div>
+    <div class="ablation-grid fade-up">
+      <div class="ablation-col">
+        <h3><span class="tag tag-ours">OURS</span> With Critics</h3>
+        <div class="ablation-videos">
+          <div class="yt-wrap"><iframe data-yt-id="ablation_ours" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+        </div>
+      </div>
+      <div class="ablation-col">
+        <h3><span class="tag tag-baseline">ABLATED</span> Without Critics</h3>
+        <div class="ablation-videos">
+          <div class="yt-wrap"><iframe data-yt-id="ablation_baseline" src="" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ DISCUSSION ═══════════════ -->
+<section id="discussion" class="section">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Discussion</div>
+      <div class="section-title">Broader Implications</div>
+      <div class="abstract">
+        <p>
+          Unlike structured domains such as mathematics or coding, comedy has no fixed reward signal&mdash;its criteria are shifting, making it a compelling proxy for many open-ended, real-world problems. COMIC&rsquo;s improvements emerge without parameter updates, gradient-based optimization, or a fixed reward function, suggesting promising directions for other creative domains. For full details, please see <a href="#" style="color:var(--accent);border-bottom:1px solid var(--accent-dim);text-decoration:none;">our paper</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CITATION ═══════════════ -->
+<section id="citation" class="section">
+  <div class="container">
+    <div class="fade-up">
+      <div class="section-label">Citation</div>
+      <div class="section-title">BibTeX</div>
+      <div class="bibtex-block">
+        <button class="bibtex-copy" onclick="copyBibtex()">Copy</button>
+        <pre id="bibtex-text">@article{comic2025,
+  title   = {COMIC: Agentic Sketch Comedy Generation},
+  author  = {},
+  journal = {},
+  year    = {2025}
+}</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer class="footer">
+  <div class="container">
+    <p>COMIC &mdash; Fully Automated AI Comedy Video Generation</p>
+  </div>
+</footer>
+
+<!-- ═══════════════ JS ═══════════════ -->
+<script>
+const YOUTUBE_IDS = {
+  featured:           "rxGwVyWfzMA",
+  sketch01:           "FF3cGC5CSGc",
+  sketch02:           "BzyyRbm8kYc",
+  sketch03:           "HqcTS020h5A",
+  sketch04:           "ae0ZqHQqX4A",
+  sketch05:           "VJ41VvefGMI",
+  ablation_ours:      "rxGwVyWfzMA",
+  ablation_baseline:  "d48nngYxCKI",
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('iframe[data-yt-id]').forEach(iframe => {
+    const key = iframe.getAttribute('data-yt-id');
+    const videoId = YOUTUBE_IDS[key];
+    if (videoId && videoId !== 'VIDEO_ID_HERE') {
+      iframe.src = `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+    }
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+});
+
+function copyBibtex() {
+  const text = document.getElementById('bibtex-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.bibtex-copy');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+  });
+}
+
+let currentAudio = null;
+let currentBtn = null;
+
+function playVoice(btn, src) {
+  if (currentAudio && currentBtn === btn) {
+    currentAudio.pause();
+    currentAudio = null;
+    btn.classList.remove('playing');
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg> Listen to voice';
+    currentBtn = null;
+    return;
+  }
+  if (currentAudio) {
+    currentAudio.pause();
+    currentBtn.classList.remove('playing');
+    currentBtn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg> Listen to voice';
+  }
+  currentAudio = new Audio(src);
+  currentBtn = btn;
+  btn.classList.add('playing');
+  btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Playing...';
+  currentAudio.play();
+  currentAudio.onended = () => {
+    btn.classList.remove('playing');
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg> Listen to voice';
+    currentAudio = null;
+    currentBtn = null;
+  };
+}
+
+function drawChart(canvasId, title, data, color) {
+  const canvas = document.getElementById(canvasId);
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+
+  const pad = { top: 36, right: 16, bottom: 32, left: 46 };
+  const pW = W - pad.left - pad.right;
+  const pH = H - pad.top - pad.bottom;
+
+  const gens = data.map(d => d.gen);
+  const xMin = Math.min(...gens);
+  const xMax = Math.max(...gens);
+  const xRange = xMax - xMin || 1;
+  const allVals = data.flatMap(d => [d.min, d.max]);
+  const yMin = Math.floor(Math.min(...allVals) * 10) / 10;
+  const yMax = Math.ceil(Math.max(...allVals) * 10) / 10;
+  const yRange = yMax - yMin || 0.1;
+
+  const xScale = i => pad.left + ((data[i].gen - xMin) / xRange) * pW;
+  const yScale = v => pad.top + pH - ((v - yMin) / yRange) * pH;
+
+  ctx.fillStyle = '#e8e6e3';
+  ctx.font = "600 11px 'Inter', sans-serif";
+  ctx.fillText(title, pad.left, 18);
+
+  ctx.strokeStyle = 'rgba(42,42,58,0.6)';
+  ctx.lineWidth = 1;
+  const ticks = 5;
+  ctx.font = "10px 'JetBrains Mono', monospace";
+  ctx.fillStyle = '#8b8999';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= ticks; i++) {
+    const v = yMin + (yRange * i) / ticks;
+    const y = yScale(v);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+    ctx.fillText(v.toFixed(2), pad.left - 6, y + 3);
+  }
+
+  ctx.textAlign = 'center';
+  gens.forEach((e, i) => {
+    ctx.fillText(e, xScale(i), H - pad.bottom + 16);
+  });
+  ctx.fillText('generation', pad.left + pW / 2, H - 2);
+
+  ctx.beginPath();
+  data.forEach((d, i) => {
+    const x = xScale(i);
+    if (i === 0) ctx.moveTo(x, yScale(d.max)); else ctx.lineTo(x, yScale(d.max));
+  });
+  for (let i = data.length - 1; i >= 0; i--) ctx.lineTo(xScale(i), yScale(data[i].min));
+  ctx.closePath();
+  ctx.fillStyle = color.replace('1)', '0.12)');
+  ctx.fill();
+
+  ctx.beginPath();
+  data.forEach((d, i) => {
+    const x = xScale(i), y = yScale(d.mean);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  data.forEach((d, i) => {
+    const x = xScale(i), y = yScale(d.mean);
+    ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = '#13131a'; ctx.lineWidth = 1.5; ctx.stroke();
+  });
+}
+
+window.addEventListener('load', () => {
+  const winData = [
+    { gen: 0, min: 0.4938, max: 0.5062, mean: 0.5000 },
+    { gen: 1, min: 0.5309, max: 0.6790, mean: 0.6132 },
+    { gen: 2, min: 0.6605, max: 0.7346, mean: 0.7037 },
+    { gen: 4, min: 0.7901, max: 0.8025, mean: 0.7984 },
+    { gen: 8, min: 0.7160, max: 0.8333, mean: 0.7881 },
+    { gen: 16, min: 0.7901, max: 0.8827, mean: 0.8436 },
+  ];
+  const interData = [
+    { gen: 0, min: 0.4006, max: 0.4582, mean: 0.4289 },
+    { gen: 1, min: 0.4248, max: 0.5591, mean: 0.4838 },
+    { gen: 2, min: 0.4186, max: 0.5768, mean: 0.4939 },
+    { gen: 4, min: 0.4067, max: 0.4543, mean: 0.4345 },
+    { gen: 8, min: 0.2815, max: 0.4045, mean: 0.3535 },
+    { gen: 16, min: 0.4110, max: 0.5764, mean: 0.5139 },
+  ];
+
+  drawChart('chart-win', 'Win Rate', winData, 'rgba(240,192,64,1)');
+  drawChart('chart-inter', 'Inter-Diversity', interData, 'rgba(91,141,239,1)');
+});
+</script>
+</body>
+</html>

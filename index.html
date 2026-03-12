@@ -208,6 +208,11 @@ body::before{
 }
 .scroll-hint svg{width:20px;height:20px;stroke:var(--text-dim)}
 @keyframes float{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+@keyframes float-vertical{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+@media(max-width:768px){
+  .hero{flex-direction:column;justify-content:flex-start;padding-top:2rem;padding-bottom:2rem}
+  .scroll-hint{position:static;transform:none;margin-top:2rem;animation:float-vertical 2s ease-in-out infinite}
+}
 
 /* ── Abstract ── */
 .abstract{

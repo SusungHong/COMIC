@@ -2,7 +2,7 @@
 [![Project Page](https://img.shields.io/badge/Project_Page-Visit-blue)](https://susunghong.github.io/COMIC)
 [![arXiv](https://img.shields.io/badge/arXiv-2603.11048-b31b1b)](https://arxiv.org/abs/2603.11048)
 
-<img src="https://arxiv.org/html/2603.11048v1/x3.png" width="600"/>
+<img src="https://arxiv.org/html/2603.11048v1/x3.png" width="720"/>
 
 ## :clapper: Comedy Video Results
 

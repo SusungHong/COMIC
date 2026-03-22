@@ -4,7 +4,9 @@
 
 ## :clapper: Comedy Video Results
 
-See our [project page](https://susunghong.github.io/COMIC) for results.
+![Results](https://arxiv.org/html/2603.11048v1/x3.png)
+
+See our [project page](https://susunghong.github.io/COMIC) for video results.
 
 ## :bar_chart: Comedy Evaluation
 

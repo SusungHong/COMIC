@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Haedol Park",
+    "description": "He is a typical PhD student in computer vision and generative AI, currently focusing on video content generation. He always drinks lattes, finding Americanos too dull. He enjoys attending conferences and collecting free t-shirts.",
+    "portrait_path": "Haedol_Park/portrait.png",
+    "voice_path": "Haedol_Park/voice.wav"
+  },
+  {
+    "name": "Melissa Swift",
+    "description": "She is a devilish fashion magazine editor who wears Prada and treats her assistants like disposable coffee cups and can destroy careers with a whisper. She can explain why your cerulean sweater represents the entire fashion industry in one devastating monologue.",
+    "portrait_path": "Melissa_Swift/portrait.png",
+    "voice_path": "Melissa_Swift/voice.wav"
+  }
+]

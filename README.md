@@ -60,7 +60,7 @@ All character and background assets used in the paper are included in `data/asse
 ## :memo: TODO
 
 - [x] Comedy video results
-- [x] YouTube-aligned comedy critics
+- [x] YouTube-aligned critics
 - [x] Automated evaluation code
 - [ ] Inference code
 

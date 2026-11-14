@@ -240,8 +240,9 @@ def run_cmp(agent, refs, gens, method, ch, double, delay, keys):
                 dt = time.time() - t0
                 if r.get("error"):
                     print(f"      [ERR] {ref.id[:24]} vs {gen.did[:24]}: {r['error']}")
+                    # Not a trial: errored calls are excluded here, as metrics() excludes them.
                     calls.append({"ref_id": ref.id, "gen_id": gen.did, "gen_wins": False, "error": r["error"]})
-                    t += 1; time.sleep(delay); continue
+                    time.sleep(delay); continue
                 b = r.get("best_candidate", 1)
                 gw = (b == 2) if gw2 else (b == 1)
                 w += int(gw); t += 1
